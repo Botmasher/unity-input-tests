@@ -13,15 +13,29 @@ public class MouseTracker : MonoBehaviour {
 	// store reference to main scene camera
 	private Camera mc;
 
-	// raycasting for new position
+	// raycasting for finding target position
 	private RaycastHit hit;
 	private Ray ray;
+
+	// camera targeting and movement
+	private Vector3 startingPos;
 	private Vector3 targetPos;
+	private bool targetAcquired;
+	private float travelSpeed;
 
 
 	void Awake () {
-		// pointers to game objects
+		// camera references
 		mc = Camera.main;
+
+		// initial camera movement
+		startingPos = Camera.main.transform.position;
+		targetPos = startingPos;
+		travelSpeed = 1f;
+
+		// default values for states
+		targetAcquired = false;
+
 	}
 
 
@@ -31,15 +45,27 @@ public class MouseTracker : MonoBehaviour {
 		ray = (mc.ScreenPointToRay (Input.mousePosition));
 		Physics.Raycast (ray, out hit);
 		if (hit.collider != null && hit.collider.tag == taggedTarget.tag) {
-			// store x and y but not z
-			targetPos = new Vector3(hit.transform.position.x, hit.transform.position.y, mc.transform.position.z);
+			// store x and y of target, add z distance to keep camera off target
+			targetPos = new Vector3(hit.transform.position.x, hit.transform.position.y, hit.transform.position.z-8f);
+			// activate check and speed for movement toward target
+			targetAcquired = true;
+			travelSpeed = 1f;
 		}
 
-		// lerp camera towards hit tagged target
-		if (mc.transform.position != targetPos) {
-			mc.transform.position = Vector3.Lerp (mc.transform.position, targetPos, Time.deltaTime);
+		// check if near a recently acquired target
+		if (targetAcquired && Mathf.Abs(mc.transform.position.x - targetPos.x) < 0.1f ) {
+			// reset state
+			targetAcquired = false;
+			// reset target to resting position with slow movement
+			targetPos = startingPos;
+			travelSpeed = 0.26f;
+		} else {
+			// lerp camera towards target
+			mc.transform.position = Vector3.Lerp (mc.transform.position, targetPos, travelSpeed*Time.deltaTime);
 		}
 
 	}
+
+}
 
 }
